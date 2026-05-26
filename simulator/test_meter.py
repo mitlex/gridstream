@@ -88,6 +88,27 @@ class TestMeterPhysics(unittest.TestCase):
         self.assertEqual(test_meter.live_voltage, test_meter.target_voltage)
         self.assertEqual(test_meter.active_load, test_meter.base_load)
 
+    def test_load_recovery_with_active_event_delta(self):
+        """Ensure load stabilizes around baseline plus event_delta under stress."""
+        # 1. Setup a balanced meter
+        test_meter = Meter(
+            id=1, 
+            location="TestBay", 
+            live_voltage=230.0,  
+            active_load=1000.0, 
+            target_voltage=230.0, 
+            base_load=1000.0,
+            load_stability_factor=0.5
+        )
+        
+        # Trigger an active event shift of +200kW with zero random noise
+        # This makes the new target equilibrium exactly 1200.0kW
+        test_meter.jitter(event_delta=200.0, voltage_jitter_range=0.0, load_jitter_range=0.0)
+        
+        # 3. Assert that the load moved up from 1000.0 towards 1200.0
+        # Formula check: 1000.0 + (1200.0 - 1000.0) * 0.5 = 1100.0
+        self.assertEqual(test_meter.active_load, 1100.0)
+
     def test_to_json_serialization_and_structure(self):
         """Verify that to_json returns a valid JSON string with correct keys."""
         # 1. Setup a standard meter

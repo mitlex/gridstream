@@ -1,8 +1,7 @@
-import time
-import datetime
 import random
-from meter import Meter
-from grid_event import GridEvent
+from simulator.grid_event import GridEvent
+from simulator.meter import Meter
+import json
 
 class Grid():
     """An environmental orchestrator managing a synchronized electrical network.
@@ -46,20 +45,60 @@ class Grid():
             GridEvent(name="Late Night Baseline Drop", affected_location="GLOBAL", load_delta=-500.0) # Net load decreases significantly as businesses close down and consumers go to sleep for the night.
         ]
 
+    @classmethod
+    def create_with_discovered_meters(cls, live_frequency, system_inertia_factor):
+        """Factory method to auto-generate a Grid populated with matching substations.
+
+        Parses the internal possible_events catalog to extract all unique, 
+        localized geographical targets. Automatically instantiates a calibrated 
+        Meter object for each discovered location to guarantee grid network synchronization.
+
+        Args:
+            live_frequency (float): Present actual operating frequency of the grid in Hz.
+            system_inertia_factor (float): The rate of resistance to sudden changes, 
+                simulating structural mechanical turbine momentum.
+
+        Returns:
+            Grid: A fully configured instance of the Grid class with dynamically 
+                mapped, synchronized substation smart meters.
+        """
+        instance = cls(meters=[], live_frequency=live_frequency, system_inertia_factor=system_inertia_factor) #create Grid class instance
+
+        #find all possible meter locations (except GLOBAL)
+        locations = []
+        for event in instance.possible_events:
+            if event.affected_location != "GLOBAL" and event.affected_location not in locations:
+                locations.append(event.affected_location)
+
+        #create meters for each location
+        for i, loc in enumerate(locations, start=1):
+            instance.meters.append(Meter(
+                id =  100+i,
+                location=loc,
+                live_voltage=230.0,
+                active_load=1000.0,
+                target_voltage=230.0,
+                base_load=1000.0
+            ))
+        
+        return instance
+
     def tick(self):
         """Advances the global grid simulation by a single discrete step.
 
-        Orchestrates the execution sequence for the current cycle: processes
-        ongoing or new network events, prompts connected meters to update local
-        metrics, factors in active localized or systemic shocks, aggregates 
-        total network demand, and computes the resulting global frequency.
+        Orchestrates the synchronous timeline execution loop for the network cycle: 
+        evaluates active grid event lifecycles, filters and computes real-time load 
+        disruption deltas for each connected substation meter, commands meters to 
+        execute internal jitter and recovery physics, aggregates total network 
+        power demand boundaries, and updates global turbine frequency inertia.
         """
         self._manage_event_lifecycle() # handle event triggers and countdowns
 
         for meter in self.meters: # allow meters to update metrics
-            meter.jitter()
+            event_delta = 0.0
             if self.active_event is not None and (self.active_event.affected_location == meter.location or self.active_event.affected_location == "GLOBAL"):
-                meter.active_load += self.active_event.load_delta
+                event_delta = self.active_event.load_delta
+            meter.jitter(event_delta=event_delta)
 
         total_active_load, total_base_load = self._calculate_grid_load() # calculate grid totals
 
@@ -115,4 +154,28 @@ class Grid():
         target_equilibrium_frequency = self.target_frequency - (grid_load_delta * self.load_sensitivity)
         self.live_frequency += (target_equilibrium_frequency - self.live_frequency) * self.system_inertia_factor
 
+    def to_json(self, timestamp):
+        """Generates a JSON string of the global grid's environmental telemetry data.
 
+        Args:
+            timestamp (str): The synchronized system ISO timestamp.
+
+        Returns:
+            str: A formatted JSON string containing global system metrics and status.
+        """
+
+        grid_data = {
+            "timestamp": timestamp,
+            "metrics": {
+                "live_frequency_hz": round(self.live_frequency, 3),
+                "target_frequency_hz": self.target_frequency,
+                "active_meters_count": len(self.meters)
+            },
+            "system_status": {
+                "active_event": self.active_event.name if self.active_event else None,
+                "active_event_location": self.active_event.affected_location if self.active_event else None,
+                "event_duration_remaining_s": self.event_duration
+            }
+        }
+
+        return json.dumps(grid_data, sort_keys=False, indent=4)
