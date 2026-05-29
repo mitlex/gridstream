@@ -118,16 +118,15 @@ class TestGridFactoryConstructor(unittest.TestCase):
             base_load=1000.0
         )
 
-class TestGridJSON(unittest.TestCase):
-    """Testing the grid's to_json method."""    
+class TestGridDictionary(unittest.TestCase):
+    """Testing the grid's to_dict method."""    
 
-    def test_to_json(self):
-        """Verify that to_json returns a valid JSON string with correct keys."""
+    def test_to_dict(self):
+        """Verify that to_dict returns a valid dictionary with correct keys."""
         grid_instance = Grid.create_with_discovered_meters(live_frequency=50.0, system_inertia_factor=0.2)
 
         test_timestamp = "2026-05-25T12:00:00"
-        json_string = grid_instance.to_json(timestamp=test_timestamp)
-        data = json.loads(json_string) #Parse the JSON string back into a Python dictionary
+        data = grid_instance.to_dict(timestamp=test_timestamp)
         
         self.assertEqual(data["timestamp"], test_timestamp)
         self.assertEqual(data["metrics"]["live_frequency_hz"], round(grid_instance.live_frequency, 3))

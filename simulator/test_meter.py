@@ -109,8 +109,8 @@ class TestMeterPhysics(unittest.TestCase):
         # Formula check: 1000.0 + (1200.0 - 1000.0) * 0.5 = 1100.0
         self.assertEqual(test_meter.active_load, 1100.0)
 
-    def test_to_json_serialization_and_structure(self):
-        """Verify that to_json returns a valid JSON string with correct keys."""
+    def test_to_dict(self):
+        """Verify that to_dict returns a valid dict with correct keys."""
         # 1. Setup a standard meter
         test_meter = Meter(
             id=1, 
@@ -125,13 +125,10 @@ class TestMeterPhysics(unittest.TestCase):
         test_timestamp = "2026-05-25T12:00:00"
         test_freq = 50.05
         
-        # 3. Call the method to get the JSON string
-        json_string = test_meter.to_json(grid_frequency=test_freq, timestamp=test_timestamp)
+        # 3. Call the method to get the dict
+        data = test_meter.to_dict(grid_frequency=test_freq, timestamp=test_timestamp)
         
-        # 4. Parse the JSON string back into a Python dictionary
-        data = json.loads(json_string)
-        
-        # 5. Assertions on structure and values
+        # 4. Assertions on structure and values
         self.assertEqual(data["meter_id"], 1)
         self.assertEqual(data["timestamp"], test_timestamp)
         self.assertEqual(data["metadata"]["location"], "London")

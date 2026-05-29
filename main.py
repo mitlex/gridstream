@@ -4,14 +4,14 @@ import json
 from simulator.grid import Grid
 
 def run_simulation_smoke_test():
-    print("🚀 Initializing GridStream Telemetry Hub Smoke Test...")
+    print("Initializing GridStream Telemetry Hub Smoke Test...")
     
-    # Initialize your grid using your factory constructor
+    # Initialize grid
     grid = Grid.create_with_discovered_meters(live_frequency=50.0, system_inertia_factor=0.2)
     
-    print(f"📡 Connected to {len(grid.meters)} auto-discovered sub-stations.")
+    print(f"Connected to {len(grid.meters)} auto-discovered sub-stations.")
     print("Press Ctrl+C to stop the stream.\n")
-    time.sleep(2)  # Give the engineer a moment to read the boot logs
+    time.sleep(5)  # Give the user a moment to read the boot logs
 
     try:
         tick_count = 1
@@ -32,7 +32,7 @@ def run_simulation_smoke_test():
                 ]
             }
             
-            # 4. Print the unified master payload to the terminal screen
+            # 4. Print the master frame to terminal
             print(json.dumps(master_packet, indent=2))
             print("\n" + "="*60 + "\n")
             
@@ -40,7 +40,7 @@ def run_simulation_smoke_test():
             time.sleep(1)  # Space out ticks by 1 real-world second
             
     except KeyboardInterrupt:
-        print("\n🛑 Simulation terminated by engineer. Pipeline offline.")
+        print("\nSimulation terminated by user")
 
 if __name__ == "__main__":
     run_simulation_smoke_test()

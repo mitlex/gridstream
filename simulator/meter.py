@@ -1,4 +1,3 @@
-import json
 import random
 
 class Meter():
@@ -59,21 +58,21 @@ class Meter():
         target_load_equilibrium = self.base_load + event_delta
 
         # simulate grid inertia to pull volt and load back to target/base values (and avoid infinite random number drift)
-        self.live_voltage  += (self.target_voltage - self.live_voltage ) * self.voltage_stability_factor
+        self.live_voltage  += (self.target_voltage - self.live_voltage) * self.voltage_stability_factor
         self.active_load += (target_load_equilibrium - self.active_load) * self.load_stability_factor
 
-    def to_json(self, grid_frequency, timestamp):
-        """Generates a JSON string of the meter's telemetry data.
+    def to_dict(self, grid_frequency, timestamp):
+        """Generates a dictionary of the meter's telemetry data.
 
         Args:
             grid_frequency (float): The current global grid frequency in Hz.
             timestamp (str): The synchronized system ISO timestamp.
 
         Returns:
-            str: A formatted JSON string containing readings and metadata.
+            dict: A dictionary containing readings and metadata.
         """
 
-        telemetry_data = {
+        return {
             "meter_id": self.id,
             "timestamp": timestamp,
             "status": self.status,
@@ -86,5 +85,3 @@ class Meter():
                 "location": self.location
             }
         }
-
-        return json.dumps(telemetry_data, sort_keys=False, indent=4)

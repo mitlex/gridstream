@@ -67,7 +67,7 @@ class Grid():
         #find all possible meter locations (except GLOBAL)
         locations = []
         for event in instance.possible_events:
-            if event.affected_location != "GLOBAL" and event.affected_location not in locations:
+            if event.affected_location != "GLOBAL" and event.affected_location not in locations: # second condition avoids duplicates
                 locations.append(event.affected_location)
 
         #create meters for each location
@@ -154,17 +154,17 @@ class Grid():
         target_equilibrium_frequency = self.target_frequency - (grid_load_delta * self.load_sensitivity)
         self.live_frequency += (target_equilibrium_frequency - self.live_frequency) * self.system_inertia_factor
 
-    def to_json(self, timestamp):
-        """Generates a JSON string of the global grid's environmental telemetry data.
+    def to_dict(self, timestamp):
+        """Generates a dictionary of the global grid's environmental telemetry data.
 
         Args:
             timestamp (str): The synchronized system ISO timestamp.
 
         Returns:
-            str: A formatted JSON string containing global system metrics and status.
+            dict: A dictionary containing global system metrics and status.
         """
 
-        grid_data = {
+        return {
             "timestamp": timestamp,
             "metrics": {
                 "live_frequency_hz": round(self.live_frequency, 3),
@@ -177,5 +177,3 @@ class Grid():
                 "event_duration_remaining_s": self.event_duration
             }
         }
-
-        return json.dumps(grid_data, sort_keys=False, indent=4)

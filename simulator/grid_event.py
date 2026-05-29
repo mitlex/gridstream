@@ -1,7 +1,7 @@
 class GridEvent:
     """A blueprint for physical and operational disruptions on the electrical network.
 
-    Defines a specific localized or system-wide anomaly that instantly shifts 
+    Defines a specific localized or system-wide (global) anomaly that instantly shifts 
     consumer demand (load), triggering an eventual frequency and voltage reaction.
 
     Attributes:
