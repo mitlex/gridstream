@@ -10,15 +10,27 @@
 <body>
     <h1>Gridstream Telemetry Dashboard</h1>
 
-    <!-- Visible HTML placeholder container that preserves formatting, line breaks, and spaces of JSON data layout (only for the page element with id "output") -->
+    <!-- 
+        The <p> tag is a block level container that contains a paragraph of text
+        <span> is an inline container (that sits inside a block level container) used for pinpointing and changing a single word or value
+        In this case we've applied a bold styling to all text within the <span> tag - "Waiting...", in this case
+    -->
+    <p>Current Frequency: <span id="freq-display" style="font-weight: bold;">Waiting...</span></p>
+
+    <!-- 
+        <pre> is a block level container that stands alone on its own line, similar to <p> (paragraph)
+        <pre> preserves formatting, line breaks, and spaces, which preserves our JSON data layout
+        We identify and access this container with id "output"
+        <pre> is useful when we want to insert formatted text chunks, code, or raw data logs
+     -->
     <pre id="output">Waiting for grid telemetry data...</pre> 
 
     <!--
-        <script> tells the browser to stop rendering layouts and swap language to JavaScript, then execute the JS code within the <script> tag.
-        Inside <script> we gain access to the DOM (document object model) via the global 'document' object, which represents the entire webpage loaded into the browser window.
-        This allows the websocket to locate our container using its ID ("output") and replace the "Waiting for data ..." text with our JSON formatted grid data string.
-        We can write JS directly within <script> or fetch JS from external sources and refer to them here using the 'src' attribute. E.g. src="link_goes_here".
-        It's good practice to place the <script> at the very bottom of <body> so that all data-binding containers exist on screen before the script tries to interact with them.
+        <script> tells the browser to stop rendering layouts and swap language to JavaScript, then execute the JS code within the <script> tag
+        Inside <script> we gain access to the DOM (document object model) via the global 'document' object, which represents the entire webpage loaded into the browser window
+        This allows the websocket to locate our container using its ID ("output") and replace the "Waiting for data ..." text with our JSON formatted grid data string
+        We can write JS directly within <script> or fetch JS from external sources and refer to them here using the 'src' attribute. E.g. src="link_goes_here"
+        It's good practice to place the <script> at the very bottom of <body> so that all data-binding containers exist on screen before the script tries to interact with them
     -->
     <script> 
     // getElementById method accesses the document object to locate our specific layout container by its ID "output", which we store in outputEL
@@ -32,6 +44,12 @@
         try {
             const grid_data = JSON.parse(event.data) // We need to convert the master packet into a JSON object again because the browser receives the master packet as a string
             console.log("Parsed Data:", grid_data); // Print the data to browser developer console (F12)
+
+            // Here we are accessing our <span> inline container, id: "freq-display" and replacing the innerText
+            // We use JavaScript dot notation to access the nested elements of our nested JSON object 
+            // The "Waiting..." text in our <span> is replaced by our grid live frequency with unit Hz
+            document.getElementById("freq-display").innerText = grid_data.grid_global.metrics.live_frequency_hz + " Hz";
+
             outputEl.innerText = JSON.stringify(grid_data, null, 2); // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
         } 
         catch (error) {
