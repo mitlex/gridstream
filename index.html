@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+
+<!---head tag contains metadata about the web page-->
+<head> 
+    <title>GridStream Telemetry Dashboard</title> <!---Document name (also = Browser tab text)-->
+</head>
+
+ <!---body tag contains things physically seen on the web page-->
+<body>
+    <h1>Gridstream Telemetry Dashboard</h1>
+
+    <!-- Visible HTML placeholder container that preserves formatting, line breaks, and spaces of JSON data layout (only for the page element with id "output") -->
+    <pre id="output">Waiting for grid telemetry data...</pre> 
+
+    <!--
+        <script> tells the browser to stop rendering layouts and swap language to JavaScript, then execute the JS code within the <script> tag.
+        Inside <script> we gain access to the DOM (document object model) via the global 'document' object, which represents the entire webpage loaded into the browser window.
+        This allows the websocket to locate our container using its ID ("output") and replace the "Waiting for data ..." text with our JSON formatted grid data string.
+        We can write JS directly within <script> or fetch JS from external sources and refer to them here using the 'src' attribute. E.g. src="link_goes_here".
+        It's good practice to place the <script> at the very bottom of <body> so that all data-binding containers exist on screen before the script tries to interact with them.
+    -->
+    <script> 
+    // getElementById method accesses the document object to locate our specific layout container by its ID "output", which we store in outputEL
+    const outputEl = document.getElementById("output"); 
+
+    // Establish connection pipeline to local Uvicorn broadcast host
+    const socket = new WebSocket('ws://localhost:8000/ws');
+
+    // Listen for incoming messages (master packet of grid data (string) in our case)
+    socket.onmessage = function (event)  {// Since we don't supply a name for the function, this function can't be executed elsewhere, and will only run when we receive a message through the websocket
+        try {
+            const grid_data = JSON.parse(event.data) // We need to convert the master packet into a JSON object again because the browser receives the master packet as a string
+            console.log("Parsed Data:", grid_data); // Print the data to browser developer console (F12)
+            outputEl.innerText = JSON.stringify(grid_data, null, 2); // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
+        } 
+        catch (error) {
+            console.error("Received data was not valid JSON:", error);
+        }    
+        };
+    </script>
+</body>
+</html>

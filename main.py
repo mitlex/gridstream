@@ -22,12 +22,12 @@ def run_simulation_smoke_test():
             # 2. Capture a single synchronized timestamp for this step
             current_timestamp = datetime.datetime.now().isoformat()
             
-            # 3. Parse our JSON strings back into temporary objects to build a master frame
+            # 3. Parse JSON strings back into temporary objects to build a master frame
             master_packet = {
                 "telemetry_frame": tick_count,
-                "grid_global": json.loads(grid.to_json(current_timestamp)),
+                "grid_global": grid.to_dict(current_timestamp),
                 "substations": [
-                    json.loads(meter.to_json(grid.live_frequency, current_timestamp)) 
+                    meter.to_dict(grid.live_frequency, current_timestamp)
                     for meter in grid.meters
                 ]
             }

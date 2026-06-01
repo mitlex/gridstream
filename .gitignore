@@ -43,3 +43,6 @@ $RECYCLE.BIN/
 # --- Local Environment Secrets ---
 # DANGER: NEVER commit this. Contains API keys and private credentials 
 .env
+
+# --- Practice Files for this Project --- 
+indextest.html

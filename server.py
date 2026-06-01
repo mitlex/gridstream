@@ -41,6 +41,13 @@ import asyncio
 # so that FastAPI can safely launch the physics engine at boot and guarantee cleanup code runs if the server stops.
 from contextlib import asynccontextmanager
 
+# Standard FastAPI utility component used to transmit physical files across network protocols.
+# Converts file content bytes on the host hard drive into formatted HTTP transmission strings.
+# In this program:
+# Used inside the serve_dashboard endpoint to intercept standard web browser lookups 
+# and automatically push our local 'index.html' dashboard layout file across the network link.
+from fastapi.responses import FileResponse
+
 # ======== CODE =========
 
 grid = Grid.create_with_discovered_meters(live_frequency=50.0, system_inertia_factor=0.2) # initialize the grid
@@ -90,7 +97,7 @@ async def lifespan(_app: FastAPI): # FastAPI insists on this argument but we don
     """
     # FastAPI executes this on startup
     # Asynchronously creating this task means that FastAPI will move to the next line (print) (avoiding the grid_telemetry_loop infinite loop)
-    asyncio.create_task(grid_telemetry_loop()) 
+    asyncio.create_task(grid_telemetry_loop())
     print("GridStream Physics Engine Heartbeat Started...")
     yield # Pause lifespan - FastAPI tells Uvicorn it can open the doors for web traffic, and FastAPI can begin directing that traffic to websocket_endpoint if the URL ends with /ws
     print("GridStream Server Shutting Down...") # FastAPI executes this when we terminate Uvicorn
@@ -101,6 +108,22 @@ async def lifespan(_app: FastAPI): # FastAPI insists on this argument but we don
 # FastAPI parks itself at yield and in the event of a crash the structure allows FastAPI to move past the yield line and execute the cleanup code even though the application crashed.
 # In our case the cleanup code is just a print statement but in a production application there would be real cleanup processes occurring here.
 grid_api = FastAPI(lifespan=lifespan)
+
+@grid_api.get("/")
+async def serve_dashboard():
+    """Serves the static grid telemetry user interface (dashboard) to the client browser directly from the server root.
+    
+    When a user hits enter on http://localhost:8000 in their browser address bar it sends a GET request to our server.
+    If the user doesn't specify a page (e.g. http://localhost:8000/about.html), it defaults to a GET / request,
+    i.e. the browser requests the root ("/") of the site by default.
+    FastAPI sees this GET / and matches it to our decorator, and reads "index.html" from disk and streams it back to the client browser.
+
+    Unifies frontend delivery and the live WebSocket pipeline onto a single channel (8000) 
+    to ensure a zero-configuration, single-command launch experience.
+    """
+    # Extracts 'index.html' from disk and injects a 'Content-Type: text/html' header 
+    # so the browser renders the file visually as a dashboard.
+    return FileResponse("index.html")
 
 @grid_api.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

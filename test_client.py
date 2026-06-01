@@ -2,8 +2,8 @@ import asyncio
 import websockets
 
 async def listen_to_server():
-    # Connect directly to your local FastAPI endpoint URL
-    url = "ws://127.0.0.1:8000/ws"
+    # Connect directly to local FastAPI endpoint URL
+    url = "ws://localhost:8000/ws"
     
     async with websockets.connect(url) as websocket:
         print(f"Connected to data pipe at: {url}")
