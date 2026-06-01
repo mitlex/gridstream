@@ -24,6 +24,16 @@
     <p>Active Event: <span id="event-display" style="font-weight: bold;">Waiting...</span></p>
 
     <!-- 
+        <div> is another block-level container that starts on a newline, similar to <p>
+        Unlike <p>, <div> containers can contain other block-level containers, as well as inline containers
+        They are non-semantic, meaning they don't tell the browser anything about the content inside (whereas <p> tells the browser it contains text)
+        In this case we'll use the <div> container that will allow JavaScript to dynamically inject our list of grid substations without hardcoding
+        This allows us to change the number of substations in our grid object and the web page will dynamically update
+        We'll use the id to give JS a reference for data injection into our empty <div> container
+    -->
+    <div id="substations-grid"></div>
+
+    <!-- 
         <pre> is a block level container that stands alone on its own line, similar to <p> (paragraph)
         <pre> preserves formatting, line breaks, and spaces, which preserves our JSON data layout
         We identify and access this container with id "output"
@@ -45,11 +55,21 @@
     // Establish connection pipeline to local Uvicorn broadcast host
     const socket = new WebSocket('ws://localhost:8000/ws');
 
-    // Listen for incoming messages (master packet of grid data (string) in our case)
-    socket.onmessage = function (event)  {// Since we don't supply a name for the function, this function can't be executed elsewhere, and will only run when we receive a message through the websocket
+    // Unlike Python where we call a function and pass an argument in, here we are using a "Callback Function"
+    // You can think of Callback functions like recipes you leave for the browser to execute when a specific trigger occurs
+    // In this case, the trigger is a new network message arriving from our websocket
+    // The browser automatically creates a pre-packaged JavaScript object containing all the metadata about the network message (including arrival timestamp, network port, and the raw payload .data)
+    // We can then reach our grid telemetry data through this JS object by accessing the object .data attribute
+    // Note that since we wrote this as an anonymous function (function without a name), it cannot be called or executed elsewhere in the script, making it a tidy single-use callback
+    // We don't HAVE to use the parameter name 'event', the browser doesn't care, it just passes in the pre-packaged JavaScript object as the argument 
+    // Note that the data arrives to the browser as a string - we'll need to parse the data back into JSON
+    socket.onmessage = function (event)  {
         try {
-            const grid_data = JSON.parse(event.data) // We need to convert the master packet into a JSON object again because the browser receives the master packet as a string
-            console.log("Parsed Data:", grid_data); // Print the data to browser developer console (F12)
+            // Convert the master packet from a string into a JSON object
+            const grid_data = JSON.parse(event.data) 
+
+            // Print the data to browser developer console (F12)
+            console.log("Parsed Data:", grid_data); 
 
             // Here we are accessing our <span> inline container, id: "freq-display" and replacing the innerText
             // We use JavaScript dot notation to access the nested elements of our nested JSON object 
@@ -61,8 +81,8 @@
             const eventEl = document.getElementById("event-display");
             const currentEvent = grid_data.grid_global.system_status.active_event;
 
-            // Dynamically update the <span> container
-            // Replace <span> container innerText with "NONE - SYSTEM NORMAL" when no event is active, and colour the text green
+            // Dynamically update the "event-display" <span> container
+            // Replace container innerText with "NONE - SYSTEM NORMAL" when no event is active, and colour the text green
             // Show "active_event_name" when an event is active, and colour the text red
             if (currentEvent == null) {
                 eventEl.innerText = "NONE - SYSTEM NORMAL";
@@ -72,7 +92,29 @@
                 eventEl.style.color = "#dc3545"; // red hex code
             }
 
-            outputEl.innerText = JSON.stringify(grid_data, null, 2); // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
+            // Loop through all substation meters and display data in our <div> container
+            
+            // Create reference to <div> container
+            const substationsContainer = document.getElementById("substations-grid");
+
+            // Clear the text inside the container every 1s to match our grid update frequency, preventing old text/data piling up infinitely on the web page
+            substationsContainer.innerText = "";
+
+            // Loop through list of substation meters using JS built-in forEach method
+            // Pass anonymous callback function to forEach that will execute on each item in the list
+            // Browser will create a JS object representing each substation meter in the list
+            // We pass the JS object as an argument to our callback function for the parameter we've named "meter"
+            // Notice that forEach functions similarly to Python's map function, where you can map a function onto each item in an iterable
+            grid_data.substations.forEach(function(meter) {
+
+                // Compile summary of substation data and append the text into the substations-grid <div> container
+                const stationSummary = meter.metadata.location + " (ID: " + meter.meter_id + ") - Load: " + meter.readings.load_kw + " kW<br>"; 
+                substationsContainer.innerHTML += stationSummary; // innerText will not parse HTML tags, so we swap to innerHTML so the browser parses the <br> tag, giving us a newline
+
+            }); // notice the closing bracket here
+
+            // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
+            outputEl.innerText = JSON.stringify(grid_data, null, 2); 
         } 
         catch (error) {
             console.error("Received data was not valid JSON:", error);
