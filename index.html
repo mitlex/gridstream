@@ -17,6 +17,12 @@
     -->
     <p>Current Frequency: <span id="freq-display" style="font-weight: bold;">Waiting...</span></p>
 
+    <!--
+        Separate paragraph adds a new line
+        We'll use the "event_display" span to display an active event
+    -->
+    <p>Active Event: <span id="event-display" style="font-weight: bold;">Waiting...</span></p>
+
     <!-- 
         <pre> is a block level container that stands alone on its own line, similar to <p> (paragraph)
         <pre> preserves formatting, line breaks, and spaces, which preserves our JSON data layout
@@ -49,6 +55,22 @@
             // We use JavaScript dot notation to access the nested elements of our nested JSON object 
             // The "Waiting..." text in our <span> is replaced by our grid live frequency with unit Hz
             document.getElementById("freq-display").innerText = grid_data.grid_global.metrics.live_frequency_hz + " Hz";
+
+            // Create reference to event-display <span> container so we can modify the text dynamically
+            // Create reference to the active event name
+            const eventEl = document.getElementById("event-display");
+            const currentEvent = grid_data.grid_global.system_status.active_event;
+
+            // Dynamically update the <span> container
+            // Replace <span> container innerText with "NONE - SYSTEM NORMAL" when no event is active, and colour the text green
+            // Show "active_event_name" when an event is active, and colour the text red
+            if (currentEvent == null) {
+                eventEl.innerText = "NONE - SYSTEM NORMAL";
+                eventEl.style.color = "#28a745"; // green hex code
+            } else {
+                eventEl.innerText = currentEvent.toUpperCase();
+                eventEl.style.color = "#dc3545"; // red hex code
+            }
 
             outputEl.innerText = JSON.stringify(grid_data, null, 2); // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
         } 
