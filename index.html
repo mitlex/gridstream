@@ -3,7 +3,39 @@
 
 <!---head tag contains metadata about the web page-->
 <head> 
-    <title>GridStream Telemetry Dashboard</title> <!---Document name (also = Browser tab text)-->
+    <!---Document name (also = Browser tab text)-->
+    <title>GridStream Telemetry Dashboard</title> 
+    
+    <!--
+        The <style> tag tells the browser to interpret text within as visual design layout instructions, changing language to Cascading Style Sheets (CSS)
+        The selector is used to target an HTML element and the properties inside {} change that element's appearance
+        You can select the following:
+            1. A tag name e.g. body and this will impact all <body> blocks
+            2. A unique id e.g. #event-display will impact that one exact container id
+            3. A Class name to target a reusable group of elements e.g. .substation-card will target any element with the class name "substation-card" assigned to it
+
+        selector {
+            property: value;
+        }
+    -->
+    <style>
+            /* 1. Target the body to change the overall page theme */
+            body {
+                font-family: Arial, sans-serif; /* Clean, modern typeface instead of old typewriter font */
+                background-color: #f4f6f9;     /* Light grey industrial background tint */
+                margin: 30px;                  /* Add breathing space around the edges of the page window */
+            }
+
+            /* 2. Target any element that has the class name "substation-card" assigned to it */
+            .substation-card {
+                background-color: #ffffff;      /* Solid white card background */
+                border-left: 5px solid #007bff; /* Utility blue accent bar on the left border edge */
+                padding: 15px;                  /* Internal padding to keep text away from the edges */
+                margin-bottom: 15px;            /* Vertical spacing outside the card to push cards away from each other */
+                border-radius: 4px;             /* Slightly round the corners of the card */
+            }
+        </style>
+
 </head>
 
  <!---body tag contains things physically seen on the web page-->
@@ -97,21 +129,41 @@
             // Create reference to <div> container
             const substationsContainer = document.getElementById("substations-grid");
 
-            // Clear the text inside the container every 1s to match our grid update frequency, preventing old text/data piling up infinitely on the web page
-            substationsContainer.innerText = "";
-
             // Loop through list of substation meters using JS built-in forEach method
             // Pass anonymous callback function to forEach that will execute on each item in the list
             // Browser will create a JS object representing each substation meter in the list
             // We pass the JS object as an argument to our callback function for the parameter we've named "meter"
             // Notice that forEach functions similarly to Python's map function, where you can map a function onto each item in an iterable
             grid_data.substations.forEach(function(meter) {
+                // Construct a unique ID for this specific substation meter card element
+                const cardId = "meter-card-" + meter.meter_id
 
-                // Compile summary of substation data and append the text into the substations-grid <div> container
-                const stationSummary = meter.metadata.location + " (ID: " + meter.meter_id + ") - Load: " + meter.readings.load_kw + " kW<br>"; 
-                substationsContainer.innerHTML += stationSummary; // innerText will not parse HTML tags, so we swap to innerHTML so the browser parses the <br> tag, giving us a newline
+                // Search the webpage to see if this card container already exists in memory
+                // We need to use let here as const would not allow us to overwrite the cardEl variable
+                // If the card is missing, this will return null, and then we can reassign the variable inside the block below
+                let cardEl = document.getElementById(cardId);
 
-            }); // notice the closing bracket here
+                // If the card does not exist yet (the very first telemetry frame), build it
+                if (cardEl == null) {
+                    cardEl = document.createElement("div"); // Create a brand new HTML <div> tag in memory dynamically
+                    cardEl.id = cardId;                    // Assign our unique card ID to this <div> container (a.k.a. card)
+                    
+                    // Attach our visual CSS style class (".substation-card" from above) to this card
+                    // This sets the card's div container to e.g. <div id="meter-card-101" class="substation-card"></div>
+                    cardEl.className = "substation-card";  
+
+                    substationsContainer.appendChild(cardEl); // Stick the card inside our substations-grid container (parent <div>) as a child container
+                }
+
+                // Update phase: Since the card container is safely on screen, inject the live meter values
+                // This replaces the internal HTML layout structure with clean data values on every tick
+                // innerHTML allows the browser to parse HTML tags; innerText does not
+                // <small> drops the font size down 1 size level relative to its parent text container block (h3)
+                // <strong> tells the browser and screen-reading accessibility software that the text inside is important and results in a bold style 
+                 cardEl.innerHTML = "<h3>" + meter.metadata.location + " <small>(ID: " + meter.meter_id + ")</small></h3>" +
+                                    "<p><strong>Active Load:</strong> " + meter.readings.load_kw + " kW</p>" +
+                                        "<p><strong>Live Voltage:</strong> " + meter.readings.voltage_v + " V</p>";
+            });
 
             // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
             outputEl.innerText = JSON.stringify(grid_data, null, 2); 
