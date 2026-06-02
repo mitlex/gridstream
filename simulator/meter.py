@@ -22,7 +22,7 @@ class Meter():
             Lower value does the opposite. 
         load_to_voltage_coupling_factor (float): Scales how heavily 
             load deltas (due to events) impact the substation target equilibrium voltage.
-            Higher value causes a greater shift in the current target equilibrium voltage during grid disruptions; 
+            Higher value causes a greater shift in the current target equilibrium voltage during grid disruptions every grid tick; 
             lower value does the opposite.
         status (str): Represents meter health (e.g. operational, fault).
     """
