@@ -19,20 +19,45 @@
         }
     -->
     <style>
-            /* 1. Target the body to change the overall page theme */
+            /* Target the body to change the overall page theme */
             body {
                 font-family: Arial, sans-serif; /* Clean, modern typeface instead of old typewriter font */
                 background-color: #f4f6f9;     /* Light grey industrial background tint */
                 margin: 30px;                  /* Add breathing space around the edges of the page window */
             }
 
-            /* 2. Target any element that has the class name "substation-card" assigned to it */
+            /* 
+                Target the "substations-grid" <div> container to apply CSS Flexbox layout system
+                <div> containers force child elements onto new lines; we use Flexbox to enable cards to sit side-by-side within the container 
+            */
+            #substations-grid {
+                display: flex;       /* Turns this container into a Flexbox row container */
+                flex-wrap: wrap;     /* Tells cards: "If you run out of screen width, snap smoothly to a new line below" */
+                gap: 20px;           /* Automatically adds a clean 20-pixel padding space between all items horizontally and vertically */
+            }
+
+            /* Target any element that has the class name "substation-card" assigned to it */
             .substation-card {
                 background-color: #ffffff;      /* Solid white card background */
-                border-left: 5px solid #007bff; /* Utility blue accent bar on the left border edge */
                 padding: 15px;                  /* Internal padding to keep text away from the edges */
-                margin-bottom: 15px;            /* Vertical spacing outside the card to push cards away from each other */
+                /*margin-bottom: 15px;            /* Vertical spacing outside the card to push cards away from each other. [No longer needed - #substations-grid parent container gap handles this]*/
                 border-radius: 4px;             /* Slightly round the corners of the card */
+                box-sizing: border-box;         /* Tells the browser to account for the size of the entire card, including padding, so that it shrinks contents to ensure it is no wider than we define below*/
+                width: calc(33.333% - 14px);   /* Tells the browser to take up roughly one-third of the screen row per card, subtracting 14px to leave enough room for the 20px gap in #substations-grid*/
+            }
+
+            /* 
+                Healthy substation state modifier class
+                We use dot notation so that we only apply this styling to elements that have both class names (substation-card and nominal-state) attached at the same time 
+            */
+            .substation-card.nominal-state {
+                border-left: 5px solid #28a745; /* Clean Green left accent bar */
+            }
+
+            /* Breached voltage or load bounds alert state substation modifier class */
+            .substation-card.alert-state {
+                border-left: 5px solid #dc3545; /* Critical Alert Red left accent bar */
+                background-color: #fff8f8;      /* Soft alert tint covering the card backdrop */
             }
         </style>
 
@@ -136,7 +161,7 @@
             // Notice that forEach functions similarly to Python's map function, where you can map a function onto each item in an iterable
             grid_data.substations.forEach(function(meter) {
                 // Construct a unique ID for this specific substation meter card element
-                const cardId = "meter-card-" + meter.meter_id
+                const cardId = "meter-card-" + meter.meter_id;
 
                 // Search the webpage to see if this card container already exists in memory
                 // We need to use let here as const would not allow us to overwrite the cardEl variable
@@ -153,6 +178,18 @@
                     cardEl.className = "substation-card";  
 
                     substationsContainer.appendChild(cardEl); // Stick the card inside our substations-grid container (parent <div>) as a child container
+                }
+
+                // Determine if live voltage and load are out of bounds - and style the cards representing each meter to represent this
+                const voltage = meter.readings.voltage_v;
+                const load = meter.readings.load_kw;
+                const voltageBreached = (voltage < 226.5) || (voltage > 233.5);
+                const loadBreached = load > 1080.0;
+
+                if (voltageBreached || loadBreached) {
+                    cardEl.className = "substation-card alert-state"; // update cardEl className to include both alert-state and substation-card
+                } else {
+                    cardEl.className = "substation-card nominal-state";
                 }
 
                 // Update phase: Since the card container is safely on screen, inject the live meter values

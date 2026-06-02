@@ -15,11 +15,19 @@ class Meter():
         target_voltage (float): Substation baseline voltage target.
         base_load (float): Expected average power consumption baseline.
         voltage_stability_factor (float): Strength of voltage regulation.
+            Higher value causes the live voltage to move towards the current target voltage faster every grid tick;
+            Lower value does the opposite. 
         load_stability_factor (float): Rate at which demand relaxes to baseline.
+            Higher value causes the active load to move towards the current target load faster every grid tick;
+            Lower value does the opposite. 
+        load_to_voltage_coupling_factor (float): Scales how heavily 
+            load deltas (due to events) impact the substation target equilibrium voltage.
+            Higher value causes a greater shift in the current target equilibrium voltage during grid disruptions; 
+            lower value does the opposite.
         status (str): Represents meter health (e.g. operational, fault).
     """
 
-    def __init__(self, id, location, live_voltage, active_load, target_voltage, base_load, voltage_stability_factor=0.05, load_stability_factor=0.08, status="operational"):
+    def __init__(self, id, location, live_voltage, active_load, target_voltage, base_load, voltage_stability_factor=0.05, load_stability_factor=0.08, load_to_voltage_coupling_factor=0.01, status="operational"):
         self.id = id
         self.location = location
         self.live_voltage = live_voltage
@@ -28,6 +36,7 @@ class Meter():
         self.base_load = base_load
         self.voltage_stability_factor = voltage_stability_factor
         self.load_stability_factor = load_stability_factor
+        self.load_to_voltage_coupling_factor = load_to_voltage_coupling_factor
         self.status = status
 
     def jitter(self, event_delta=0.0, voltage_jitter_range=0.5, load_jitter_range=10.0):
@@ -50,15 +59,19 @@ class Meter():
         voltage_jitter = random.uniform(-voltage_jitter_range, voltage_jitter_range)
         load_jitter = random.uniform(-load_jitter_range, load_jitter_range)
 
-        # apply jitters
+        # Apply jitters
         self.live_voltage += voltage_jitter
         self.active_load += load_jitter
 
-        # account for any active event (0 by default)
+        # Set the target center points for load and voltage based on current grid event.
         target_load_equilibrium = self.base_load + event_delta
+        target_voltage_equilibrium = self.target_voltage - (event_delta * self.load_to_voltage_coupling_factor)
 
-        # simulate grid inertia to pull volt and load back to target/base values (and avoid infinite random number drift)
-        self.live_voltage  += (self.target_voltage - self.live_voltage) * self.voltage_stability_factor
+        # Smoothly pull the live voltage and load values toward their target_voltage/load_equilbirium values on every grid tick.
+        # The mathematics here act like a rubber band, slowing down changes and preventing random 
+        # numbers from drifting away into unrealistic figures.
+        # the stability factors limit how quickly we approach target values from our current live voltage/active load
+        self.live_voltage  += (target_voltage_equilibrium - self.live_voltage) * self.voltage_stability_factor 
         self.active_load += (target_load_equilibrium - self.active_load) * self.load_stability_factor
 
     def to_dict(self, grid_frequency, timestamp):

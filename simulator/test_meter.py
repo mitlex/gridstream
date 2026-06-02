@@ -51,7 +51,9 @@ class TestMeterPhysics(unittest.TestCase):
             live_voltage=230.0,  
             active_load=1000.0, 
             target_voltage=230.0, 
-            base_load=1000.0
+            base_load=1000.0,
+            voltage_stability_factor=0.0,
+            load_stability_factor=0.0
         )
         
         # 2. Define strict testing ranges
@@ -101,13 +103,18 @@ class TestMeterPhysics(unittest.TestCase):
             load_stability_factor=0.5
         )
         
-        # Trigger an active event shift of +200kW with zero random noise
+        # 2. Trigger an active event shift of +200kW with zero random noise
         # This makes the new target equilibrium exactly 1200.0kW
         test_meter.jitter(event_delta=200.0, voltage_jitter_range=0.0, load_jitter_range=0.0)
         
         # 3. Assert that the load moved up from 1000.0 towards 1200.0
         # Formula check: 1000.0 + (1200.0 - 1000.0) * 0.5 = 1100.0
         self.assertEqual(test_meter.active_load, 1100.0)
+
+        # 4. Assert that the voltage dropped proportionally due to load/voltage coupling physics
+        # Starting: 230.0V. Target: 228.0V. Stability: 0.05 default.
+        # Formula check: 230.0 + (228.0 - 230.0) * 0.05 = 229.9V
+        self.assertEqual(test_meter.live_voltage, 229.9)
 
     def test_to_dict(self):
         """Verify that to_dict returns a valid dict with correct keys."""

@@ -14,10 +14,15 @@ class Grid():
         meters (list[Meter]): Collection of connected local sub-station smart meters.
         live_frequency (float): Present actual operating frequency of the grid in Hz.
         system_inertia_factor (float): The rate of resistance to sudden changes, 
-            simulating structural mechanical turbine momentum.
+            simulating structural mechanical turbine momentum. Lower values cause the frequency 
+            to respond slowly and sluggishly (heavy grid stability); higher values 
+            cause rapid, volatile frequency swings (light grid stability).
         target_frequency (float): Ideal network frequency standard (typically 50.0 Hz).
         load_sensitivity (float): Scaling factor dictating how much the system equilibrium 
-            shifts per Kilowatt (kW) of load deviation.
+            shifts per Kilowatt (kW) of load deviation. Higher values amplify the 
+            severity of a grid frequency drop under load stress (high load); lower values dampen the 
+            impact system frequency by load imbalances (load imbalances being where 
+            total active load across the grid deviates from the total baseline load of the grid).
         active_event (GridEvent or None): The disruption model currently impacting the grid.
         event_duration (int): Remaining simulation cycles (seconds) for the active event.
         possible_events (list[GridEvent]): Pre-instantiated catalog of possible disruptions.
