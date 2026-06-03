@@ -6,6 +6,12 @@
     <!---Document name (also = Browser tab text)-->
     <title>GridStream Telemetry Dashboard</title> 
     
+    <!-- 
+        Load external Chart.js drawing framework library engine
+        <script> tag is explained below 
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+
     <!--
         The <style> tag tells the browser to interpret text within as visual design layout instructions, changing language to Cascading Style Sheets (CSS)
         The selector is used to target an HTML element and the properties inside {} change that element's appearance
@@ -91,6 +97,17 @@
     <div id="substations-grid"></div>
 
     <!-- 
+        The <canvas> element is a specialized HTML tag used as a blank drawing board
+        Chart.js uses this target area to dynamically sketch the grid trend lines
+        Note that we are using "Inline CSS Styling" here;
+        A quick way to tell the browser to add styling to a container without setting up a class selector in the main stylesheet above
+    -->
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 4px; margin-top: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; height: 350px">
+        <h3 style="margin-top: 0; color: #1a1a1a;">Real-Time Substation Load Trend (Last 60 Ticks)</h3> <!--Add margin and font colouring to the header text-->
+        <canvas id="load-trend-chart"></canvas>
+    </div>
+
+    <!-- 
         <pre> is a block level container that stands alone on its own line, similar to <p> (paragraph)
         <pre> preserves formatting, line breaks, and spaces, which preserves our JSON data layout
         We identify and access this container with id "output"
@@ -111,6 +128,79 @@
 
     // Establish connection pipeline to local Uvicorn broadcast host
     const socket = new WebSocket('ws://localhost:8000/ws');
+
+    // This code will form the basis for our load chart implementation
+    const MAX_CHART_TICKS = 60; // this will give us 1 minute of rolling history on our chart
+    const substationTrends = {}; // {} creates a JS object (which acts exactly like a Python dict) and we'll use this to store our meter data for our chart e.g. { 101: [...data...], 102: [...] }
+    
+        // Use a HSL (Hue, Saturation, Lightness) hashing technique to generate a unique colour for each substation meter on the line graph
+        // hsl() is a native CSS colour function, similar to how rgb() is a CSS colour function 
+        // Saturation is intensity - set to 70% for solid, vibrant colours
+        // Lightness is brightness - set to 50% for balance
+        // Hue is the actual colour wheel position from 0 to 360 degrees
+        // Multiplying by 137 shifts the position on the color wheel enough so that we avoid clumping meters in with very similar colours
+        // 137 is a prime number, sharing no common factors with 360, meaning the colour wheel co-ordinates will not repeat or overlap until we've generated hundreds of unique substation lines
+        // Modulo (%) 360 ensures that we get a result for uniqueHue from 0-360
+        // Example calc for meter id 101:
+            // Divide 13837 by 360, it's roughly 38.4...
+            // 360 cleanly fits into 13837 38 times
+            // 38 * 360 = 13680
+            // Modulo returns the remainder: 13837 - 13680 = 157 <- this is our unique hue
+    function getUniqueColorById(meterId) {
+        const uniqueHue = (meterId * 137) % 360;
+        return "hsl(" + uniqueHue + ", 70%, 50%)"; // e.g. "hsl(157, 70%, 50%)"
+    }
+
+        // Now we'll initialize the chart for our canvas
+        // First set up reference to our <canvas>
+    const canvasElement = document.getElementById("load-trend-chart"); 
+    
+        // We can't draw anything on our canvas until we request a special drawing engine object, otherwise known as the Context (ctx)
+        // By passing "2d" into .getContext(), we are effectively telling the browser:
+        // "Open up a flat 2D rendering engine for this canvas and give me access to built-in 2D mathematical drawing commands
+    const ctx = canvasElement.getContext("2d"); 
+        
+        // Now that we've got our 2D context, we can call Chart.js into action
+    const loadChart = new Chart(ctx, { // pass the 2D context (including the 2D mathematical drawing commands) to Chart.js
+        type: "line", // Tells Chart.js to load it's built-in "line" layout - it now knows it will be connecting dots with lines
+        data: {
+            // Controls x-axis labels (not Y-axis). Empty because we'll push telemetry frame ticks here dynamically later
+            labels: [], 
+            // Datasets is an array of config objects, one per graph line, each defining line label and colour, and pointing to one specific meter data array in the substatioNTrends JS object (see above)
+            // It will populate later to look something like this
+            // datasets: [
+            // {
+            //     label: "Orkney (ID: 101)",
+            //     borderColor: "hsl(157, 70%, 50%)", 
+            //     data: substationTrends[101]       // Points directly to substationTrend data for this meter
+            // }
+            datasets: [] 
+        },
+        options: {
+            responsive: true,           // Automatically recalculates chart dimensions and redraws layout if the user resizes their browser window.
+            maintainAspectRatio: false, // Disables Chart.js fixed width-to-height proportion, forcing the chart to fill horizontal space while locking height to the height parameter defined in our <div> tag.
+            animation: {
+                duration: 0 // Disables Chart.js default animated line smoothing. Trend lines snap to new coordinates instantly with zero lag, maximizing rendering speed and syncing perfectly with meter card updates.
+            },
+            // scales is where we define our x and y axes bounds and titles
+            scales: {
+            y: {
+                min: 500,  // By default, Chart.js will scale the y-axis to our dataset values, zooming in and out as load changes, unless we fix the min and max as we've done here
+                max: 1500, 
+                title: {
+                    display: true,
+                    text: 'Power Demand (kW)'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Simulation Timeline History (Seconds)'
+                }
+            }
+        }
+        }
+    });
 
     // Unlike Python where we call a function and pass an argument in, here we are using a "Callback Function"
     // You can think of Callback functions like recipes you leave for the browser to execute when a specific trigger occurs
@@ -161,7 +251,8 @@
             // Notice that forEach functions similarly to Python's map function, where you can map a function onto each item in an iterable
             grid_data.substations.forEach(function(meter) {
                 // Construct a unique ID for this specific substation meter card element
-                const cardId = "meter-card-" + meter.meter_id;
+                const meterId = meter.meter_id
+                const cardId = "meter-card-" + meterId;
 
                 // Search the webpage to see if this card container already exists in memory
                 // We need to use let here as const would not allow us to overwrite the cardEl variable
@@ -200,7 +291,46 @@
                  cardEl.innerHTML = "<h3>" + meter.metadata.location + " <small>(ID: " + meter.meter_id + ")</small></h3>" +
                                     "<p><strong>Active Load:</strong> " + meter.readings.load_kw + " kW</p>" +
                                         "<p><strong>Live Voltage:</strong> " + meter.readings.voltage_v + " V</p>";
+
+                // Create or update meter data arrays inside our substationTrends object for our multi-line loadChart
+                // Check if this meterId exists as a key inside our substationTrends object
+                if (!substationTrends[meterId]) {
+                    // Create a brand new, empty array for this meter ID key
+                    substationTrends[meterId] = []; 
+
+                    // Create and push a new line configuration object into the our loadChart datasets array
+                    loadChart.data.datasets.push({ // JavaScript .push() is equivalent to Pythons .append()
+                        label: meter.metadata.location + " (ID: " + meterId + ")",
+                        data: substationTrends[meterId],
+                        borderColor: getUniqueColorById(meterId), // Deploy our prime-number HSL hashing engine
+                        backgroundColor: "transparent",
+                        borderWidth: 2,
+                        pointRadius: 0 // Remove dot vertices to maximize performance on 1-second ticks
+                    });
+                };
+
+                // Append the latest load reading from the meter to the back of our meter data history array (think FIFO)
+                substationTrends[meterId].push(meter.readings.load_kw);
+
+                // FIFO: if history (length of our meter data array) goes beyond MAX_CHART_TICKS (60) then remove the oldest data point
+                // Note: .shift() is similar to .pop(0) in Python, however .shift() specifically pops off the item in the first index of an array and moves all remaining items down one index
+                if (substationTrends[meterId].length > MAX_CHART_TICKS) { // .length is JavaScript equivalent to python len(list/array)
+                    substationTrends[meterId].shift();
+                }
             });
+            
+            // Update load line chart on every message received from websocket 
+            // First, manage the horizontal timeline axis tracking labels in unison
+            if (loadChart.data.labels.length < MAX_CHART_TICKS) { // remember labels is an array too so we can grab it's length
+                loadChart.data.labels.push(grid_data.telemetry_frame); // 1, 2, 3, ...
+            } else { // at least 60 frames have been pushed  
+                loadChart.data.labels.push(grid_data.telemetry_frame); // push newest frame on right side of graph
+                loadChart.data.labels.shift(); // shift oldest frame off left side of graph and move all frames down one index
+            }
+
+            // Lastly, issue a single, non-animated redraw signal to Chart.js to update all lines simultaneously on our load chart
+            // "none" tells Chart.js to bypass default line smoothing logic so we can maintain our sync between lines and load values 
+            loadChart.update("none");
 
             // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
             outputEl.innerText = JSON.stringify(grid_data, null, 2); 
