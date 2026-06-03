@@ -65,32 +65,91 @@
                 border-left: 5px solid #dc3545; /* Critical Alert Red left accent bar */
                 background-color: #fff8f8;      /* Soft alert tint covering the card backdrop */
             }
+
+            /* Target the top panel container to match our meter card theme */
+            #system-header-panel {
+                background-color: #ffffff;
+                padding: 20px;
+                border-radius: 4px;
+                margin-bottom: 25px; /* Add a clean horizontal margin to push substation cards downward */
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                box-sizing: border-box;
+            }
+
+            /* Strip default margins from the main dashboard header to keep layout tight */
+            #system-header-panel h1 {
+                margin-top: 0;
+                margin-bottom: 15px;
+                color: #1a1a1a;
+                font-size: 24px;
+                border-bottom: 2px solid #f4f6f9; /* Add a subtle divider line beneath the main title */
+                padding-bottom: 10px;
+            }
+
+            /* Flexbox wrapper to arrange our critical metrics side-by-side */
+            .header-metric-row {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            /* Style the paragraph text blocks to look like bold labels */
+            .header-metric-row p {
+                margin: 0;
+                font-size: 15px;
+                color: #555555; /* Slate grey labelling text */
+                font-weight: bold;
+            }
+
+            /* Make the dynamic span text values stand out clearly */
+            .header-metric-row span {
+                font-size: 16px;
+                margin-left: 5px; /* Push value text slightly away from the bold label */
+            }
+
+            /* A "pill" or badge layout style. It wraps secondary text metrics inside an isolated background box */
+            .event-meta-pill {
+                background-color: #f8d7da;      /* Soft alert-pink background tint */
+                color: #721c24;                 /* Deep maroon text for high contrast readability */
+                font-size: 13px;                /* Make text slightly smaller than the main alert name */
+                padding: 3px 8px;               /* Internal padding to wrap the text like a pill badge */
+                border-radius: 4px;             /* Slightly round the corners */
+                margin-left: 10px;              /* Leave breathing space between the alert name and the pill */
+                font-weight: normal;            /* Drop bold styling to make data metrics scannable */
+                display: inline-block;          /* Ensures the pill stays structured as a single visual unit */
+            }
         </style>
 
 </head>
 
  <!---body tag contains things physically seen on the web page-->
 <body>
-    <h1>Gridstream Telemetry Dashboard</h1>
-
     <!-- 
-        The <p> tag is a block level container that contains a paragraph of text
-        <span> is an inline container (that sits inside a block level container) used for pinpointing and changing a single word or value
-        In this case we've applied a bold styling to all text within the <span> tag - "Waiting...", in this case
+        <div> is a block-level container that starts on a newline
+        <div> containers can contain other block-level containers, as well as inline containers
+        They are non-semantic, meaning they don't tell the browser anything about the content inside
     -->
-    <p>Current Frequency: <span id="freq-display" style="font-weight: bold;">Waiting...</span></p>
+    <div id="system-header-panel">
+        <h1>Gridstream Telemetry Dashboard</h1>
+
+        <div class="header-metric-row">
+            <!-- 
+                The <p> tag is another block level container (similar to <div>) that contains a paragraph of text (it is semantic, it tells the browser it contains text)
+                <p> containers cannot contain other block-level containers
+                <span> is an inline container (that sits inside a block level container) used for pinpointing and changing the style of a single word or value
+            -->
+            <p>Current Frequency: <span id="freq-display">Waiting...</span></p>
+
+            <!--
+                Separate paragraph adds a new line
+                We'll use the "event_display" span to display an active event
+            -->
+            <p>Active Event: <span id="event-display">Waiting...</span></p>
+        </div>
+    </div>
 
     <!--
-        Separate paragraph adds a new line
-        We'll use the "event_display" span to display an active event
-    -->
-    <p>Active Event: <span id="event-display" style="font-weight: bold;">Waiting...</span></p>
-
-    <!-- 
-        <div> is another block-level container that starts on a newline, similar to <p>
-        Unlike <p>, <div> containers can contain other block-level containers, as well as inline containers
-        They are non-semantic, meaning they don't tell the browser anything about the content inside (whereas <p> tells the browser it contains text)
-        In this case we'll use the <div> container that will allow JavaScript to dynamically inject our list of grid substations without hardcoding
+        In this case we'll use the <div> container to allow JavaScript to dynamically inject our list of grid substations without hardcoding
         This allows us to change the number of substations in our grid object and the web page will dynamically update
         We'll use the id to give JS a reference for data injection into our empty <div> container
     -->
@@ -113,7 +172,7 @@
         We identify and access this container with id "output"
         <pre> is useful when we want to insert formatted text chunks, code, or raw data logs
      -->
-    <pre id="output">Waiting for grid telemetry data...</pre> 
+    <!--<pre id="output">Waiting for grid telemetry data...</pre>-->
 
     <!--
         <script> tells the browser to stop rendering layouts and swap language to JavaScript, then execute the JS code within the <script> tag
@@ -124,7 +183,7 @@
     -->
     <script> 
     // getElementById method accesses the document object to locate our specific layout container by its ID "output", which we store in outputEL
-    const outputEl = document.getElementById("output"); 
+    // const outputEl = document.getElementById("output"); 
 
     // Establish connection pipeline to local Uvicorn broadcast host
     const socket = new WebSocket('ws://localhost:8000/ws');
@@ -235,7 +294,9 @@
                 eventEl.innerText = "NONE - SYSTEM NORMAL";
                 eventEl.style.color = "#28a745"; // green hex code
             } else {
-                eventEl.innerText = currentEvent.toUpperCase();
+                eventEl.innerHTML = currentEvent.toUpperCase() 
+                + " <span class='event-meta-pill'>Location: " + grid_data.grid_global.system_status.active_event_location + "</span>"
+                + " <span class='event-meta-pill'>Duration: " + grid_data.grid_global.system_status.event_duration_remaining_s; + "s</span>";
                 eventEl.style.color = "#dc3545"; // red hex code
             }
 
@@ -333,7 +394,7 @@
             loadChart.update("none");
 
             // Access the outputEl (id = "output") and convert the grid_data JSON to a string to print inside the element (null = don't filter data)
-            outputEl.innerText = JSON.stringify(grid_data, null, 2); 
+            // outputEl.innerText = JSON.stringify(grid_data, null, 2); 
         } 
         catch (error) {
             console.error("Received data was not valid JSON:", error);
