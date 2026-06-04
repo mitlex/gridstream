@@ -6,17 +6,17 @@ from simulator.grid import Grid
 
 # ======== SERVER ORCHESTRATION CONTEXT =========
 # Note: This file is executed externally by the Uvicorn web server via the terminal.
-# Uvicorn acts as the primary process host, feeding raw network bytes directly into 
-# the FastAPI application routing structures defined below.
-# FastAPI is the primary orchestrator of code within this file, orchestrating lifespan phases, triggering the grid physics engine, and directing network paths straight to websocket_endpoint function.
+# Uvicorn acts as the primary process host, translating raw network bytes into standardised Asynchronous Server Gateway Interface (ASGI) 
+# packets and feeding them directly to the FastAPI application routing structures defined below.
+# FastAPI is the primary orchestrator of code within this file, orchestrating lifespan phases, triggering the grid physics engine, and directing network paths straight to decorated functions.
 # ===============================================
 
 # Modern, high-performance web framework used across Python to build network routing paths and APIs.
 # Acts as the system orchestrator that translates incoming web traffic into structured Python events.
 # In this program:
-#   FastAPI: Application framework that reads raw bytes from Uvicorn and routes them to specific functions based on the path at the end of the web address 
+#   FastAPI: Application framework that reads ASGI network packets from Uvicorn and routes them to specific functions based on the path at the end of the web address 
 #       (e.g., routing 'ws://127.0.0.1:8000/ws' straight to the websocket_endpoint function)
-#   WebSocket: A FastAPI object that packages raw network connection bytes into a clean Python structure we can interact with
+#   WebSocket: A FastAPI object that packages ASGI network data into a clean Python structure we can interact with
 #   WebSocketDisconnect: An error type used to catch when a user closes their browser tab or drops connection cleanly
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
@@ -31,6 +31,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
     #   -listening for client disconnects
     # FastAPI to continue:
     #   -routing new clients to the websocket_endpoint function
+    #   -continue serving the dashboard to the one or more client browsers
 import asyncio
 
 # Standard engine used across Python to build secure, asynchronous resource management tools.

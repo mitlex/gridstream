@@ -1,5 +1,4 @@
 import unittest
-import json
 from meter import Meter
 
 class TestMeterPhysics(unittest.TestCase):

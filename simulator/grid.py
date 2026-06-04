@@ -1,7 +1,6 @@
 import random
 from simulator.grid_event import GridEvent
 from simulator.meter import Meter
-import json
 
 class Grid():
     """An environmental orchestrator managing a synchronized electrical network.
@@ -50,7 +49,11 @@ class Grid():
             GridEvent(name="Late Night Baseline Drop", affected_location="GLOBAL", load_delta=-500.0) # Net load decreases significantly as businesses close down and consumers go to sleep for the night.
         ]
 
-    @classmethod
+    # The @classmethod decorator allows us to call this method directly on the class
+    # (e.g., grid = Grid.create_with_discovered_meters(live_freq, sif)).
+    # Python automatically passes the Grid class itself into the 'cls' argument,
+    # which allows the method to dynamically instantiate the correct object 
+    @classmethod 
     def create_with_discovered_meters(cls, live_frequency, system_inertia_factor):
         """Factory method to auto-generate a Grid populated with matching substations.
 
