@@ -66,10 +66,10 @@ The project implements a completely decoupled architecture using an asynchronous
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef physical fill:#f9f9f9,stroke:#333,stroke-width:2px;
-    classDef network fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef browser fill:#f1f8e9,stroke:#558b2f,stroke-width:2px;
+    %% Styling (Explicitly forces dark text and borders for legibility)
+    classDef physical fill:#f9f9f9,stroke:#333,stroke-width:2px,color:#111;
+    classDef network fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b;
+    classDef browser fill:#f1f8e9,stroke:#558b2f,stroke-width:2px,color:#1b5e20;
 
     %% Nodes
     subgraph Physics Engine Core Simulation
@@ -155,8 +155,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Execute Automated Test Suites
-Run the automation script to launch native test discovery across your simulation files:
+### 2. (Optional) Execute Automated Test Suites
+Run the automation script to launch native test discovery across simulation files:
 ```bash
 # Ensure execution permissions are granted
 chmod +x test.sh
@@ -166,7 +166,7 @@ chmod +x test.sh
 ```
 
 ### 3. Launch the Telemetry Server
-Boot up the backend application engine down single-channel port 8000:
+Run the server script down port 8000:
 ```bash
 uvicorn server:grid_api --reload
 ```
