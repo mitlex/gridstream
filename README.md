@@ -2,7 +2,7 @@
 
 GridStream is a mock real-time grid stability simulation and monitoring dashboard designed for a UK substation operator. The system models live electrical grid physics, capturing high-frequency micro-fluctuations (jitter) and major fluctuations due to randomized grid events. The model simulates grid turbine momentum (inertia) alongside localized voltage-load coupling anomalies.
 
-### 🎓 Boot.dev Capstone Project
+### Boot.dev Capstone Project
 This project was built as the first non-guided personal project milestone on the [Boot.dev](https://www.boot.dev) curriculum. 
 *   **Time Allocated**: Completed end-to-end within ~40 hours.
 *   **Development Approach**: Since this project required combining national grid physics, asynchronous Python streaming, and frontend web development all at once, I used an AI-collaborative workflow to accelerate my research and learn these technologies.
@@ -114,7 +114,7 @@ graph TD
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 *   **Grid Physics Simulation**: Models real-world metrics by balancing the global grid frequency against moving local station loads and linked voltage drops.
 *   **Turbine Inertia Modeling**: Implements a mechanical dampening math formula that prevents data metrics from drifting away randomly, simulating how real physical generators lag under sudden network stress.
